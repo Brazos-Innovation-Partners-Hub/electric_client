@@ -294,6 +294,16 @@ if Code.ensure_loaded?(Ecto) do
       bitstring_literal(bitstring)
     end
 
+    # A bound value given its type explicitly — `type(^value, type)`, which Ash writes
+    # for every comparison in a policy — is left by the planner as it was bound, not
+    # dumped: an enum's member arrives as an atom (`:space`), which has no rendering.
+    # Such a value is dumped through its type first; one that already renders is
+    # rendered as it is, so a string, a number or a key is unchanged.
+    defp expr(%Ecto.Query.Tagged{value: {:^, _, [ix | _]}, type: type}, sources, query, bindings) do
+      value = bindings |> bound_value(ix) |> dumped(type, query)
+      [maybe_paren(value, sources, query, bindings), ?:, ?: | tagged_to_db(type)]
+    end
+
     defp expr(%Ecto.Query.Tagged{value: other, type: type}, sources, query, bindings) do
       [maybe_paren(other, sources, query, bindings), ?:, ?: | tagged_to_db(type)]
     end
@@ -330,9 +340,38 @@ if Code.ensure_loaded?(Ecto) do
       [?\', Date.to_iso8601(date), ?\' | "::date"]
     end
 
+    # An atom bound with no type to dump it through: its name, as an `Ecto.Enum` stores it.
+    defp expr(atom, _sources, _query, _bindings) when is_atom(atom) do
+      [?\', escape_string(Atom.to_string(atom)), ?\']
+    end
+
     defp expr(expr, _sources, query, _bindings) do
       error!(query, "unsupported expression: #{inspect(expr)}")
     end
+
+    # What a bound value is stored as, for a value with no rendering of its own.
+    # By the time the query is planned the tag holds what the type is stored as — `:string`
+    # for an `Ecto.Enum` or an Ash atom, the enum itself gone — and a string-stored atom is
+    # stored by its name. Anything else is dumped through the type, or refused.
+    defp dumped(value, type, query) when is_atom(value) and value not in [nil, true, false] do
+      case Ecto.Type.dump(type, value) do
+        {:ok, dumped} ->
+          dumped
+
+        _ ->
+          if Ecto.Type.type(type) in [:string, :text],
+            do: Atom.to_string(value),
+            else: error!(query, "#{inspect(value)} cannot be dumped as #{inspect(type)}")
+      end
+    end
+
+    defp dumped(values, {:array, type}, query) when is_list(values),
+      do: Enum.map(values, &dumped(&1, type, query))
+
+    defp dumped(values, type, query) when is_list(values),
+      do: Enum.map(values, &dumped(&1, type, query))
+
+    defp dumped(value, _type, _query), do: value
 
     defp json_extract_path(expr, [], sources, query, bindings) do
       expr(expr, sources, query, bindings)
@@ -350,6 +389,19 @@ if Code.ensure_loaded?(Ecto) do
     defp tagged_to_db(:id), do: "bigint"
     defp tagged_to_db(:integer), do: "bigint"
     defp tagged_to_db({:array, type}), do: [tagged_to_db(type), ?[, ?]]
+    # A parameterized or custom type (`Ecto.Enum`, Ash's types) is cast to what it is
+    # stored as: `Ecto.Enum` and an Ash atom as `varchar`.
+    defp tagged_to_db({:parameterized, _} = type), do: tagged_to_db(Ecto.Type.type(type))
+
+    # A custom type is a module with `type/0`; anything else — `:uuid`, a primitive — is
+    # named as it is.
+    defp tagged_to_db(type) when is_atom(type) do
+      if not Ecto.Type.primitive?(type) and Code.ensure_loaded?(type) and
+           function_exported?(type, :type, 0),
+         do: tagged_to_db(type.type()),
+         else: ecto_to_db(type)
+    end
+
     defp tagged_to_db(type), do: ecto_to_db(type)
 
     defp interval(count, interval, _sources, _query, _bindings) when is_integer(count) do

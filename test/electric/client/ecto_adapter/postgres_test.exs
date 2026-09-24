@@ -21,6 +21,7 @@ defmodule Electric.Client.EctoAdapter.PostgresTest do
       field(:aa, {:array, :integer})
       field(:mm, Money)
       field(:ul, ULID, prefix: "ul")
+      field(:ee, Ecto.Enum, values: [:space, :room])
     end
   end
 
@@ -56,6 +57,28 @@ defmodule Electric.Client.EctoAdapter.PostgresTest do
     assert_where(
       from(t in TestTable, where: t.ul == ^ul),
       ~s[("ul" = '1381a900-bc16-42b9-9f66-ea4eb2079dff')]
+    )
+  end
+
+  # Ash writes every comparison in a policy with its types explicit — `type(^value, type)`
+  # — and the planner leaves such a value as it was bound: an enum's member is an atom,
+  # which used to raise "unsupported expression: :space" (Forge's rooms, 2026-09-24).
+  test "an enum's member bound with its type explicit, as Ash writes a policy" do
+    type = TestTable.__schema__(:type, :ee)
+    kind = :space
+
+    assert_where(
+      from(t in TestTable, where: type(t.ee, ^type) == type(^kind, ^type)),
+      ~s[("ee"::varchar = 'space'::varchar)]
+    )
+
+    uu = "247a6f62-9f05-4ac6-8314-89e77177d1e3"
+
+    assert_where(
+      from(t in TestTable,
+        where: type(t.ee, ^type) == type(^kind, ^type) and t.uu == ^uu
+      ),
+      ~s[(("ee"::varchar = 'space'::varchar) AND ("uu" = '247a6f62-9f05-4ac6-8314-89e77177d1e3'))]
     )
   end
 
