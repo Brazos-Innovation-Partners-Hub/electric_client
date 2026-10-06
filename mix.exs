@@ -1,6 +1,10 @@
 defmodule Electric.Client.MixProject do
   use Mix.Project
 
+  # VStack by path: its design/library-standard branch, checked out beside this repository,
+  # until the single push pins it by git again.
+  @vstack "../vstack/packages"
+
   @github_repo "https://github.com/electric-sql/electric"
 
   def project do
@@ -52,6 +56,8 @@ defmodule Electric.Client.MixProject do
 
   defp deps do
     [
+      {:vstack_shared, path: "#{@vstack}/vstack_shared", override: true},
+      {:vstack_dev, path: "#{@vstack}/vstack_dev", only: [:dev, :test], runtime: false},
       {:electric,
        "~> 1.1.11 or ~> 1.2.4 or ~> 1.3.3 or ~> 1.4.0 or ~> 1.5.1 or ~> 1.6.0 or ~> 1.7 or ~> 1.8",
        optional: true},
