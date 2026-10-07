@@ -218,7 +218,12 @@ defmodule Electric.Client.ShapeDefinition do
 
   def matches?(_term1, _term2), do: false
 
-  @doc false
+  @doc """
+  The shape's parameters as Electric reads them (`table`, `where`, `columns`, `replica`,
+  `params`): as a URL's query (`format: :query`, the default), as JSON (`:json`), or as a
+  keyword list (`:keyword`), the form an Electric embedded in the application is given a
+  predefined shape in.
+  """
   @spec params(t(), [{:format, :query | :json | :keyword}]) ::
           Electric.Client.Fetch.Request.params()
   def params(%__MODULE__{} = shape, opts \\ []) do

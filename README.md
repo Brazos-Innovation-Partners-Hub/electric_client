@@ -38,7 +38,8 @@ Upstream files changed:
     which was written under `response/2`'s name; and `up_to_date/1`'s spec, written for an
     arity it does not have.
   - `lib/electric/client/shape_definition.ex`: docs for `new/1`, `new!/1`, `new!/2`,
-    `public_keys/0` and `url_table_name/2`, and specs for `new!/1`, `public_keys/0` and
+    `public_keys/0`, `url_table_name/2` and `params/2` (hidden upstream; `electric_plug` gives
+    an embedded Electric its shape through it), and specs for `new!/1`, `public_keys/0` and
     `url_table_name/2`.
   - `lib/electric/client/fetch.ex`: a moduledoc, and docs for its two callbacks.
   - `lib/electric/client/fetch/http.ex`: a spec for `transient_status_codes/0`.
