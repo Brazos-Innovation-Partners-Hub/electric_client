@@ -4,6 +4,17 @@
 > server at Electric 1.6 (May 2026); this copy follows it. Used by `electric_plug` and by
 > `syndikos_test`. Not published to Hex.
 
+## Its design, and its gate
+
+Its design is declared in `Electric.Client.Design` (the library standard): the modules
+applications call, the behaviours a host may implement with the suite that proves each, and
+what it reaches outside the application. `usage-rules.md` is written from it.
+`mix precommit` formats, compiles with warnings as errors, runs the suite against a real
+PostgreSQL with logical replication (the local one, postgres/postgres, database
+`electric_client_test`, unless `DATABASE_URL` names another; it is made when missing), checks
+the library standard against `design/facts.json` and the usage rules, and runs the reference
+application's suite.
+
 ## How this copy differs from upstream
 
 Every change to upstream's files is listed here, so that the next update from upstream knows
@@ -16,7 +27,8 @@ Upstream files changed:
   so it passes the formatter; and `vstack_shared` (the vocabulary the design is written in) and,
   for development and tests, `vstack_dev` (the library standard's tools) are dependencies,
   taken by path while the standard is brought in.
-- `package.json`: version `0.10.3-bip.1`, so this copy is told apart from Hex's 0.10.3.
+- `package.json`: version `0.10.3-bip.2`, so this copy is told apart from Hex's 0.10.3.
+- `mix.exs`, besides: the `precommit` alias, the gate above.
 - `lib/electric/client/ecto_adapter/postgres.ex`: a bound value given its type explicitly
   (`type(^value, type)`, which Ash writes for every comparison in a policy) is rendered: an
   enum's atom by its name, and cast as its type is stored (`varchar`). Upstream raised
@@ -66,6 +78,8 @@ Files that are ours alone:
   (fetching, mapping values, authenticating) with the suite that proves each, and what the
   code reaches outside the application.
 - `lib/electric/client/examples.ex` (`Electric.Client.Examples`): its worked examples.
+- `design/facts.json`: the design's facts as committed, which the gate compares with.
+- `usage-rules.md`: written from the design, with rules written by hand above it.
 - `lib/electric/client/fetch_conformance.ex`, `fetch_conformance/harness.ex`,
   `value_mapper_conformance.ex`, `authenticator_conformance.ex` and `conformance.ex`: the suites
   that prove an implementation of each of the three behaviours a host may implement (fetching,

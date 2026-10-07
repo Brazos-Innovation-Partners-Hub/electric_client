@@ -15,6 +15,7 @@ defmodule Electric.Client.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      aliases: [precommit: &precommit/1],
       name: "Electric Client",
       description: description(),
       docs: docs(),
@@ -43,6 +44,7 @@ defmodule Electric.Client.MixProject do
   def cli do
     [
       preferred_envs: [
+        precommit: :test,
         dialyzer: :test,
         coveralls: :test,
         "coveralls.detail": :test,
@@ -76,6 +78,47 @@ defmodule Electric.Client.MixProject do
       {:excoveralls, "~> 0.18", only: [:test], runtime: false},
       {:junit_formatter, "~> 3.4", only: [:test], runtime: false}
     ]
+  end
+
+  # The gate (ours, not upstream's): this project formatted, compiled with warnings as errors and
+  # tested against a real PostgreSQL with Electric embedded; then the library standard against
+  # the committed baseline and the usage rules written from the design; then the reference
+  # application. The database is the local one unless DATABASE_URL names another.
+  defp precommit(_args) do
+    database_url =
+      System.get_env(
+        "DATABASE_URL",
+        "postgresql://postgres:postgres@localhost:5432/electric_client_test?sslmode=disable"
+      )
+
+    env = [{"MIX_ENV", "test"}, {"DATABASE_URL", database_url}]
+
+    for args <- [
+          ~w(format --check-formatted),
+          ~w(compile --warnings-as-errors),
+          ~w(ecto.create --quiet -r Support.Repo),
+          ~w(test),
+          ~w(vstack.library --app electric_client --baseline design/facts.json),
+          ~w(vstack.usage_rules --app electric_client --file usage-rules.md --check)
+        ],
+        do: run!(".", args, env)
+
+    for args <- [
+          ~w(deps.get),
+          ~w(format --check-formatted),
+          ~w(compile --warnings-as-errors),
+          ~w(test)
+        ],
+        do: run!("examples/electric_host", args, [{"MIX_ENV", "test"}])
+  end
+
+  defp run!(dir, args, env) do
+    path = Path.expand(dir, __DIR__)
+    {_, status} = System.cmd("mix", args, cd: path, into: IO.stream(), env: env)
+
+    if status != 0 do
+      Mix.raise("#{path}: mix #{Enum.join(args, " ")} failed")
+    end
   end
 
   defp docs do
