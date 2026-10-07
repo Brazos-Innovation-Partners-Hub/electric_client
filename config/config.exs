@@ -14,3 +14,9 @@ end
 
 config :electric,
   start_in_library_mode: true
+
+# The design and the worked examples are formatted as the DSLs they are written in.
+config :spark, :formatter,
+  remove_parens?: true,
+  "VStack.Library": [type: VStack.Library.Declare, extensions: [VStack.Effects]],
+  "VStack.Examples": [type: VStack.Examples.Declare]
