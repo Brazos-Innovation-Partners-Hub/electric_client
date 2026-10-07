@@ -37,10 +37,39 @@ if Code.ensure_loaded?(VStack.Examples) do
 
     # ── the ports' implementations, each proven ─────────────────────────────────
 
+    example :the_http_fetcher_keeps_its_contract do
+      description "The fetcher a client uses unless told otherwise keeps the fetch contract against an Electric server over HTTP: rows with the shape's handle, offset and schema, a live read with a cursor, and a refused table as a failure."
+      covers Electric.Client.Fetch.HTTP
+
+      act Electric.Client.FetchConformance.prove(Electric.Client.Fetch.HTTP,
+            harness: Electric.Client.Test.HTTPHarness
+          )
+
+      expect do
+        proved :ok
+      end
+    end
+
+    example :the_embedded_fetcher_keeps_its_contract do
+      description "The fetcher for an Electric embedded in the application keeps the fetch contract, in process, against a real table."
+      covers Electric.Client.Embedded
+
+      act Electric.Client.FetchConformance.prove(Electric.Client.Embedded,
+            harness: Electric.Client.Test.EmbeddedHarness
+          )
+
+      expect do
+        proved :ok
+      end
+    end
+
     example :the_mock_fetcher_keeps_its_contract do
       description "The fetcher a test gives a client keeps the fetch contract, so what a test sees is what a real fetcher would give it."
       covers Electric.Client.Mock
-      act Electric.Client.FetchConformance.prove(Electric.Client.Mock)
+
+      act Electric.Client.FetchConformance.prove(Electric.Client.Mock,
+            harness: Electric.Client.Test.MockHarness
+          )
 
       expect do
         proved :ok
@@ -61,9 +90,8 @@ if Code.ensure_loaded?(VStack.Examples) do
       description "The mapper an Ecto shape uses keeps the value mapper's contract for its schema, each row becoming one of the schema's structs."
       covers Electric.Client.EctoAdapter
 
-      act Electric.Client.ValueMapperConformance.prove(
-            Electric.Client.EctoAdapter,
-            Electric.Client.Test.Item
+      act Electric.Client.ValueMapperConformance.prove(Electric.Client.EctoAdapter,
+            options: Electric.Client.Test.Item
           )
 
       expect do
@@ -90,7 +118,7 @@ if Code.ensure_loaded?(VStack.Examples) do
 
       act Electric.Client.AuthenticatorConformance.prove(
             Electric.Client.Authenticator.MockAuthenticator,
-            salt: "a salt"
+            config: [salt: "a salt"]
           )
 
       expect do

@@ -46,6 +46,7 @@ defmodule Electric.Client.Poll do
   @type poll_result ::
           {:ok, [Client.message()], ShapeState.t()}
           | {:must_refetch, [Client.message()], ShapeState.t()}
+          | {:stale_retry, ShapeState.t()}
           | {:error, Client.Error.t()}
 
   @doc """
@@ -63,6 +64,8 @@ defmodule Electric.Client.Poll do
 
     * `{:ok, messages, new_state}` - Success, messages received
     * `{:must_refetch, messages, new_state}` - Shape was reset (409), state has been cleared
+    * `{:stale_retry, new_state}` - A cache answered with a shape known to be stale; nothing
+      was read, and `new_state` asks past the cache on the next request
     * `{:error, error}` - Error occurred
 
   ## Examples

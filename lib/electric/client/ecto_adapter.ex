@@ -1,12 +1,34 @@
 if Code.ensure_loaded?(Ecto) do
   defmodule Electric.Client.EctoAdapter do
-    @moduledoc false
+    @moduledoc """
+    Turns an Ecto query, schema, changeset or changeset function into a shape, and maps the
+    shape's rows back into the schema's structs.
+
+    A query's source is the shape's table (and its prefix the table's schema), its `where`
+    clauses the shape's where clause, and its selected fields (or every field of its schema) the
+    shape's columns. A query that cannot be one shape (a join, an aggregate, a limit) is
+    refused. `Electric.Client.shape!/1` and `stream/3` call it for an Ecto queryable; call it
+    directly to give the shape options as well.
+
+    As an `Electric.Client.ValueMapper`, given the schema module as its option, it casts each
+    row's values through the schema's field types into the schema's struct.
+    """
 
     alias Electric.Client.ShapeDefinition
     alias Electric.Client.EctoAdapter.ArrayDecoder
 
     @behaviour Electric.Client.ValueMapper
 
+    @doc """
+    The shape of an Ecto schema module, query, changeset or changeset function, with the
+    shape options given (see `Electric.Client.ShapeDefinition.new/2`; a given option takes the
+    place of the one the query gives). Raises `ArgumentError` for a query that cannot be one
+    shape.
+    """
+    @spec shape!(
+            Ecto.Queryable.t() | Ecto.Changeset.t() | (map() -> Ecto.Changeset.t()),
+            ShapeDefinition.options()
+          ) :: ShapeDefinition.t()
     def shape!(schema, opts \\ [])
 
     def shape!(schema, opts) when is_atom(schema), do: shape_from_query!(schema, opts)
@@ -47,6 +69,11 @@ if Code.ensure_loaded?(Ecto) do
             unquote(NimbleOptions.option_typespec(@shape_from_changeset_opts_schema))
           ]
 
+    @doc """
+    The shape of a changeset, or of the changeset a function returns given an empty map: its
+    schema's table, with the primary key and every field the changeset requires or validates
+    as the columns.
+    """
     @spec shape_from_changeset!(
             (map() -> Ecto.Changeset.t()) | Ecto.Changeset.t(),
             shape_from_changeset_opts()

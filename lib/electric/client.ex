@@ -148,6 +148,13 @@ defmodule Electric.Client do
   alias __MODULE__
 
   defmodule Error do
+    @moduledoc """
+    The error a read ends in: what went wrong (`message`) and, when the server answered, its
+    response (`resp`, an `Electric.Client.Fetch.Response`, or the reason the request failed).
+
+    `stream/3` raises it, or puts it in the stream with `errors: :stream`; `poll/4` returns it
+    as `{:error, error}`.
+    """
     defexception [:message, :resp]
 
     @type t() :: %__MODULE__{}
@@ -335,6 +342,9 @@ defmodule Electric.Client do
       )
     end
 
+    @doc """
+    As `embedded/1`, but raises `ArgumentError` when the client cannot be made.
+    """
     @spec embedded!(Electric.Shapes.Api.options()) :: t() | no_return()
     def embedded!(opts \\ []) do
       case embedded(opts) do
@@ -577,6 +587,9 @@ defmodule Electric.Client do
 
     * `{:ok, messages, new_state}` - Success, messages received. Use `new_state` for next poll.
     * `{:must_refetch, messages, new_state}` - Shape was reset (409). Local state should be cleared.
+    * `{:stale_retry, new_state}` - A cache in front of the server answered with a shape it
+      already knows to be stale; nothing was read. Poll again with `new_state`, which asks past
+      the cache.
     * `{:error, error}` - Error occurred
 
   ## Example
@@ -602,6 +615,7 @@ defmodule Electric.Client do
   @spec poll(t(), shape(), ShapeState.t(), poll_options()) ::
           {:ok, [message()], ShapeState.t()}
           | {:must_refetch, [message()], ShapeState.t()}
+          | {:stale_retry, ShapeState.t()}
           | {:error, Error.t()}
   def poll(client, shape, state, opts \\ [])
 
@@ -681,6 +695,7 @@ defmodule Electric.Client do
 
   Delete shape only works if Electric is configured to `allow_shape_deletion`.
   """
+  @spec delete_shape(t(), ShapeDefinition.t()) :: Fetch.Response.t() | {:error, term()}
   def delete_shape(%Client{} = client, %ShapeDefinition{} = shape) do
     request = request(client, method: :delete, shape: shape)
     Electric.Client.Fetch.request(client, request, [])

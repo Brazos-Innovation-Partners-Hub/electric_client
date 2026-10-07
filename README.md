@@ -21,6 +21,32 @@ Upstream files changed:
   (`type(^value, type)`, which Ash writes for every comparison in a policy) is rendered: an
   enum's atom by its name, and cast as its type is stored (`varchar`). Upstream raised
   "unsupported expression".
+- Documentation and typespecs only, no behaviour changed, so that every module applications
+  call says what it is for and every function it offers is documented and specified:
+  - `lib/electric/client.ex`: a moduledoc for `Electric.Client.Error`; a doc for `embedded!/1`;
+    a spec for `delete_shape/2`; and `poll/4`'s doc and spec name the answer it could already
+    give, `{:stale_retry, state}` (a cache answered with a shape known to be stale; poll again).
+  - `lib/electric/client/poll.ex`: the same answer in `poll_result` and in `request/3`'s doc.
+  - `lib/electric/client/ecto_adapter.ex`: a moduledoc (it was hidden, and applications call
+    `shape!/2`), and docs and specs for `shape!/2` and `shape_from_changeset!/2`.
+  - `lib/electric/client/message.ex`: moduledocs for `Headers`, `ControlMessage` and
+    `ChangeMessage`; docs and specs for `Headers.insert/1`, `update/1` and `delete/1` and
+    `ControlMessage.up_to_date/0` and `must_refetch/0`; and the parsers each message is read
+    with (`from_message`) hidden from the docs, as `Headers.from_message/2` already was.
+  - `lib/electric/client/mock.ex`: docs for `response/2`, `async_response/2`,
+    `async_await/2`, `up_to_date/1`, `change/1` and `headers/1`; `async_response/2`'s spec,
+    which was written under `response/2`'s name; and `up_to_date/1`'s spec, written for an
+    arity it does not have.
+  - `lib/electric/client/shape_definition.ex`: docs for `new/1`, `new!/1`, `new!/2`,
+    `public_keys/0` and `url_table_name/2`, and specs for `new!/1`, `public_keys/0` and
+    `url_table_name/2`.
+  - `lib/electric/client/fetch.ex`: a moduledoc, and docs for its two callbacks.
+  - `lib/electric/client/fetch/http.ex`: a spec for `transient_status_codes/0`.
+  - `lib/electric/client/fetch/request.ex`: a moduledoc, and `url/2`'s and `uri/2`'s specs
+    for the arity they have.
+  - `lib/electric/client/fetch/response.ex`: a moduledoc.
+- `test/test_helper.exs`: starts the stand-in Electric server the HTTP fetcher is proven
+  against.
 - `.formatter.exs`: the design and the worked examples are formatted as the DSLs they are
   written in (Spark's formatter, and the words vstack_shared exports).
 - `config/config.exs`: Spark's formatter is told those DSLs.
@@ -33,6 +59,16 @@ Files that are ours alone:
   (fetching, mapping values, authenticating) with the suite that proves each, and what the
   code reaches outside the application.
 - `lib/electric/client/examples.ex` (`Electric.Client.Examples`): its worked examples.
+- `lib/electric/client/fetch_conformance.ex`, `fetch_conformance/harness.ex`,
+  `value_mapper_conformance.ex`, `authenticator_conformance.ex` and `conformance.ex`: the suites
+  that prove an implementation of each of the three behaviours a host may implement (fetching,
+  mapping values, authenticating; `Electric.Client.Authenticator` is upstream's, its option
+  hidden in upstream's docs, declared here as a port because the client accepts it), and what
+  they share.
+- `test/electric/client/examples_test.exs` and `conformance_test.exs`, and
+  `test/support/electric_client/`: the worked examples run in their world, the world proven,
+  each suite shown catching broken implementations, and the harnesses that drive the client's
+  own three fetchers.
 
 # ElectricSQL Elixir client
 

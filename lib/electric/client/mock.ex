@@ -124,13 +124,21 @@ defmodule Electric.Client.Mock do
     )
   end
 
+  @doc """
+  Gives `client` (a mock) the next response it answers a request with, and waits until it
+  does: returns the request it answered.
+  """
   @spec response(Client.t(), response_opts()) :: {:ok, Fetch.Request.t()}
   def response(%Client{fetch: {__MODULE__, opts}}, response) when is_list(response) do
     {:ok, endpoint} = Keyword.fetch(opts, :endpoint)
     Endpoint.response(endpoint, build_response(response))
   end
 
-  @spec response(Client.t(), response_opts()) :: reference()
+  @doc """
+  As `response/2`, without waiting: returns a reference that `async_await/2` takes to wait for
+  the request the response answered.
+  """
+  @spec async_response(Client.t(), response_opts()) :: reference()
   def async_response(client, response) do
     parent = self()
     ref = make_ref()
@@ -143,6 +151,10 @@ defmodule Electric.Client.Mock do
     ref
   end
 
+  @doc """
+  Waits for the request a response given with `async_response/2` answered, and returns it;
+  raises when none comes within `timeout` milliseconds.
+  """
   @spec async_await(reference(), pos_integer() | :infinity) :: Fetch.Request.t()
   def async_await(ref, timeout \\ 5000) do
     receive do
@@ -153,7 +165,10 @@ defmodule Electric.Client.Mock do
     end
   end
 
-  @spec up_to_date() :: map()
+  @doc """
+  An up-to-date control message as the server sends it, at the log position `lsn:` when given.
+  """
+  @spec up_to_date(keyword()) :: map()
   def up_to_date(opts \\ []) do
     lsn = Keyword.get(opts, :lsn, nil)
     %{"headers" => %{"control" => "up-to-date", "global_last_seen_lsn" => lsn}}
@@ -184,6 +199,10 @@ defmodule Electric.Client.Mock do
     |> Enum.concat(up_to_date)
   end
 
+  @doc """
+  A change message as the server sends it: an `:insert` (or the `operation:` given) of the
+  `value:` given.
+  """
   @spec change(change_opts()) :: map()
   def change(opts) do
     %{
@@ -211,6 +230,10 @@ defmodule Electric.Client.Mock do
     }
   end
 
+  @doc """
+  The Electric headers of a response, as the server sends them: the shape's handle, the
+  offset reached, the schema and the cursor, each only when given.
+  """
   @spec headers([
           {:shape_handle, Client.shape_handle()}
           | {:last_offset, Client.Offset.t()}

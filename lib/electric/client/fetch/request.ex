@@ -1,4 +1,13 @@
 defmodule Electric.Client.Fetch.Request do
+  @moduledoc """
+  A request for a shape's log, as a fetcher (`Electric.Client.Fetch`) is given it: the
+  `endpoint`, the shape's `params` (table, where clause, columns), the `offset` and shape
+  `handle` to read from, whether it is `live` (waits for changes) and the server's last
+  `next_cursor`, the `method` and `headers`, and whether it is `authenticated`.
+
+  A fetcher is only given a request its client's authenticator has marked authenticated.
+  `url/2` and `uri/2` give the URL it is sent to.
+  """
   use GenServer
 
   alias Electric.Client
@@ -66,7 +75,7 @@ defmodule Electric.Client.Fetch.Request do
   @doc """
   Returns the URL for the Request.
   """
-  @spec url(t()) :: binary()
+  @spec url(t(), [{:query, boolean()}]) :: binary()
   def url(%__MODULE__{} = request, opts \\ []) do
     request
     |> uri(opts)
@@ -76,7 +85,7 @@ defmodule Electric.Client.Fetch.Request do
   @doc """
   Returns the %URI{} for the Request.
   """
-  @spec uri(t()) :: URI.t()
+  @spec uri(t(), [{:query, boolean()}]) :: URI.t()
   def uri(%__MODULE__{} = request, opts \\ []) do
     %{endpoint: endpoint} = request
 

@@ -79,6 +79,10 @@ defmodule Electric.Client.ShapeDefinition do
   @doc false
   def schema_definition, do: @schema_opts
 
+  @doc """
+  A `ShapeDefinition` for a table with no options, or for the options given as a keyword list
+  that names the table (`table:`).
+  """
   @spec new(String.t() | keyword()) :: {:ok, t()} | {:error, term()}
   def new(table_name) when is_binary(table_name) do
     new(table_name, [])
@@ -116,12 +120,15 @@ defmodule Electric.Client.ShapeDefinition do
     {:error, "Missing or invalid table: #{inspect(table)}"}
   end
 
+  @doc "As `new/1`, but raises when the options are invalid."
+  @spec new!(keyword()) :: t() | no_return()
   def new!(opts) when is_list(opts) do
     opts
     |> new()
     |> raise_for_invalid!()
   end
 
+  @doc "As `new/2`, but raises when the options are invalid."
   @spec new!(String.t(), options()) :: t() | no_return()
   def new!(table_name, opts \\ []) do
     table_name
@@ -137,6 +144,8 @@ defmodule Electric.Client.ShapeDefinition do
     end
   end
 
+  @doc "The fields that make a shape what it is, as the server is asked for it."
+  @spec public_keys() :: [atom()]
   def public_keys, do: @public_keys
 
   @doc """
@@ -161,6 +170,13 @@ defmodule Electric.Client.ShapeDefinition do
     url_table_name(namespace, table)
   end
 
+  @doc """
+  A table in a namespace, quoted for use in API URLs.
+
+      iex> ShapeDefinition.url_table_name("my_app", "my_table")
+      "my_app.my_table"
+  """
+  @spec url_table_name(String.t(), String.t()) :: String.t()
   def url_table_name(namespace, table) do
     IO.iodata_to_binary([safe_url_name(namespace), ".", safe_url_name(table)])
   end

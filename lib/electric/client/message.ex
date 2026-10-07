@@ -5,6 +5,12 @@ defmodule Electric.Client.Message do
   alias Electric.Client.Offset
 
   defmodule Headers do
+    @moduledoc """
+    What a change says about its row: the `operation` (`:insert`, `:update` or `:delete`), the
+    `relation` (schema and table), the shape's `handle`, the transaction's `lsn` and `txids`,
+    the change's `op_position`, and the `tags` (with `removed_tags` and `active_conditions`)
+    that place the row in a shape with a subquery.
+    """
     defstruct [
       :operation,
       :relation,
@@ -55,12 +61,26 @@ defmodule Electric.Client.Message do
     defp parse_operation("update"), do: :update
     defp parse_operation("delete"), do: :delete
 
+    @doc "The headers of an insert, with the fields given."
+    @spec insert(keyword()) :: t()
     def insert(opts \\ []), do: struct(%__MODULE__{operation: :insert}, opts)
+
+    @doc "The headers of an update, with the fields given."
+    @spec update(keyword()) :: t()
     def update(opts \\ []), do: struct(%__MODULE__{operation: :update}, opts)
+
+    @doc "The headers of a delete, with the fields given."
+    @spec delete(keyword()) :: t()
     def delete(opts \\ []), do: struct(%__MODULE__{operation: :delete}, opts)
   end
 
   defmodule ControlMessage do
+    @moduledoc """
+    A change in the shape's state rather than in its rows: `:up_to_date` (every change so far
+    has been read), or `:must_refetch` (the shape was reset on the server, so whatever was kept
+    of it must be dropped and its rows read again from the start). It carries the shape's
+    `handle`, the server's `global_last_seen_lsn` and when the request was made.
+    """
     defstruct [:control, :global_last_seen_lsn, :handle, :request_timestamp]
 
     @type control :: :must_refetch | :up_to_date
@@ -71,6 +91,7 @@ defmodule Electric.Client.Message do
             request_timestamp: DateTime.t()
           }
 
+    @doc false
     def from_message(
           %{"headers" => %{"control" => control} = headers},
           handle,
@@ -110,11 +131,22 @@ defmodule Electric.Client.Message do
     defp parse_lsn(lsn) when is_binary(lsn), do: String.to_integer(lsn)
     defp parse_lsn(lsn) when is_integer(lsn), do: lsn
 
+    @doc "An up-to-date message."
+    @spec up_to_date() :: t()
     def up_to_date, do: %__MODULE__{control: :up_to_date}
+
+    @doc "A must-refetch message."
+    @spec must_refetch() :: t()
     def must_refetch, do: %__MODULE__{control: :must_refetch}
   end
 
   defmodule ChangeMessage do
+    @moduledoc """
+    A row of the shape inserted, updated or deleted: its `key`, its `value` (mapped by the
+    client's value mapper: a map of column to value, or the Ecto schema's struct), for an
+    update the `old_value` it had where the server sends it, its `headers`
+    (`Electric.Client.Message.Headers`) and when the request was made.
+    """
     defstruct [:key, :value, :old_value, :headers, :request_timestamp]
 
     @type key :: String.t()
@@ -129,6 +161,7 @@ defmodule Electric.Client.Message do
 
     require Logger
 
+    @doc false
     def from_message(msg, handle, value_mapping_fun, request_timestamp) do
       %{
         "headers" => headers,

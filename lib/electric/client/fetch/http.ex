@@ -253,6 +253,7 @@ defmodule Electric.Client.Fetch.HTTP do
   @doc """
   List of HTTP status codes that represent a retryable error.
   """
+  @spec transient_status_codes() :: [pos_integer(), ...]
   def transient_status_codes, do: @transient_status
 
   @doc """

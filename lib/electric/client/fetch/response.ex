@@ -1,4 +1,11 @@
 defmodule Electric.Client.Fetch.Response do
+  @moduledoc """
+  A fetcher's answer to a request: the `status`, the `body` (the shape's messages, as maps),
+  the `headers`, and what the server's Electric headers say: the shape's `shape_handle`, the
+  `last_offset` reached, the `schema` and the `next_cursor`; and when the request was made
+  (`request_timestamp`). A fetcher reading from something other than HTTP fills the same
+  fields.
+  """
   alias Electric.Client
 
   defstruct [
