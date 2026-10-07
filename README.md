@@ -21,6 +21,12 @@ Upstream files changed:
   (`type(^value, type)`, which Ash writes for every comparison in a policy) is rendered: an
   enum's atom by its name, and cast as its type is stored (`varchar`). Upstream raised
   "unsupported expression".
+- `lib/electric/client.ex`: `delete_shape/2` sends the shape's definition with the request.
+  Upstream passed it as `shape:`, which a request has no field for, so the server was never
+  told which shape and refused every deletion ("handle can't be blank when shape definition
+  is missing"); upstream's tests only deleted in `on_exit`, logs captured, against a server
+  that allows no deletion. Proven by `test/electric/client/delete_shape_test.exs` and the
+  reference application.
 - Documentation and typespecs only, no behaviour changed, so that every module applications
   call says what it is for and every function it offers is documented and specified:
   - `lib/electric/client.ex`: a moduledoc for `Electric.Client.Error`; a doc for `embedded!/1`;
@@ -66,6 +72,9 @@ Files that are ours alone:
   mapping values, authenticating; `Electric.Client.Authenticator` is upstream's, its option
   hidden in upstream's docs, declared here as a port because the client accepts it), and what
   they share.
+- `examples/electric_host`: the reference application, which runs an Electric server over
+  its own database and reads shapes from it, over HTTP and in process.
+- `test/electric/client/delete_shape_test.exs`: a deletion carries its shape.
 - `test/electric/client/examples_test.exs` and `conformance_test.exs`, and
   `test/support/electric_client/`: the worked examples run in their world, the world proven,
   each suite shown catching broken implementations, and the harnesses that drive the client's

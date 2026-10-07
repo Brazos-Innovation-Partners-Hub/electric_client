@@ -697,7 +697,9 @@ defmodule Electric.Client do
   """
   @spec delete_shape(t(), ShapeDefinition.t()) :: Fetch.Response.t() | {:error, term()}
   def delete_shape(%Client{} = client, %ShapeDefinition{} = shape) do
-    request = request(client, method: :delete, shape: shape)
+    # The shape's definition goes with the request, as it does with a read: upstream passed it
+    # as `shape:`, which a request has no field for, so the server was never told which shape.
+    request = client |> for_shape(shape) |> request(method: :delete)
     Electric.Client.Fetch.request(client, request, [])
   end
 end
